@@ -51,6 +51,8 @@ Generated files:
 - `data/raw/is_transactions_notifications.csv`
 - `data/raw/is_not_financial_transaction.csv`
 - `data/raw/not_classified.csv`
+- `data/test/is_transactions_notifications.csv`
+- `data/test/is_not_financial_transaction.csv`
 
 Local cache:
 
@@ -63,6 +65,8 @@ The cache stores:
 - `last_page_synced`: last page visited
 
 Important note: the project stores the page value as requested, but uses `highest_synced_id` as the real incremental reference. In APIs paginated with newest records first, resuming only from the last page can miss new data because page boundaries shift over time.
+
+For labeled records, `sync` now routes roughly 20% of each new incremental batch into `data/test/` and keeps the remaining 80% in `data/raw/`. Duplicate `id` values are ignored across both directories.
 
 ## Model Versioning
 
@@ -104,7 +108,7 @@ These files must follow the same CSV schema used by the synced labeled data:
 - `text`
 - `is_financial_transaction`
 
-Training still reads the labeled data from `data/raw/`, but it now excludes any row whose `id` is present in `data/test/`. This prevents leakage when the holdout set was carved out from the same source dataset.
+These files are populated automatically by `sync` with roughly 20% of new labeled rows, but they can also be curated manually if you need a frozen benchmark. Training still reads the labeled data from `data/raw/`, but it excludes any row whose `id` is present in `data/test/`. This prevents leakage when the holdout set was carved out from the same source dataset.
 
 ## Configuration
 

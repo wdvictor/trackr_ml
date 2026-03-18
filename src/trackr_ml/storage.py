@@ -58,6 +58,23 @@ def load_csv_rows(csv_path: Path) -> list[dict[str, str]]:
         return [dict(row) for row in reader]
 
 
+def parse_csv_row_id(row: dict[str, str], csv_path: Path) -> int:
+    raw_id = (row.get("id", "") or "").strip()
+    if not raw_id:
+        raise RuntimeError(f"O arquivo {csv_path} contem uma linha sem id.")
+
+    try:
+        return int(raw_id)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"O arquivo {csv_path} contem um id invalido: {raw_id!r}."
+        ) from exc
+
+
+def load_csv_row_ids(csv_path: Path) -> set[int]:
+    return {parse_csv_row_id(row, csv_path) for row in load_csv_rows(csv_path)}
+
+
 class SyncStateStore:
     def __init__(self, state_path: Path) -> None:
         self.state_path = state_path

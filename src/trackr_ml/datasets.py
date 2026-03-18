@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 
-from .storage import load_csv_rows
+from .storage import load_csv_row_ids, load_csv_rows, parse_csv_row_id
 
 LABELED_DATASET_FILENAMES: tuple[tuple[int, str], ...] = (
     (1, "is_transactions_notifications.csv"),
@@ -11,26 +11,11 @@ LABELED_DATASET_FILENAMES: tuple[tuple[int, str], ...] = (
 )
 
 
-def _parse_row_id(row: dict[str, str], source_path: Path) -> int:
-    raw_id = (row.get("id", "") or "").strip()
-    if not raw_id:
-        raise RuntimeError(f"O arquivo {source_path} contem uma linha sem id.")
-
-    try:
-        return int(raw_id)
-    except ValueError as exc:
-        raise RuntimeError(
-            f"O arquivo {source_path} contem um id invalido: {raw_id!r}."
-        ) from exc
-
-
 def load_labeled_row_ids(data_dir: Path) -> set[int]:
     row_ids: set[int] = set()
 
     for _, filename in LABELED_DATASET_FILENAMES:
-        csv_path = data_dir / filename
-        for row in load_csv_rows(csv_path):
-            row_ids.add(_parse_row_id(row, csv_path))
+        row_ids.update(load_csv_row_ids(data_dir / filename))
 
     return row_ids
 
@@ -50,7 +35,7 @@ def load_labeled_examples(
         csv_path = data_dir / filename
         rows = load_csv_rows(csv_path)
         for row in rows:
-            row_id = _parse_row_id(row, csv_path)
+            row_id = parse_csv_row_id(row, csv_path)
             if row_id in skipped_ids:
                 continue
 

@@ -1,13 +1,20 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from hashlib import sha256
+from math import floor
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import requests
 
 from .config import Settings
 from .domain import DatasetSpec, SyncResult, SyncState
-from .storage import SyncStateStore, append_notifications, utc_now_iso
+from .storage import (
+    SyncStateStore,
+    append_notifications,
+    load_csv_row_ids,
+    utc_now_iso,
+)
 
 DATASET_SPECS: tuple[DatasetSpec, ...] = (
     DatasetSpec(
@@ -26,6 +33,8 @@ DATASET_SPECS: tuple[DatasetSpec, ...] = (
         isft=None,
     ),
 )
+
+HOLDOUT_RATIO = 0.2
 
 
 def sanitize_api_url(api_url: str) -> str:
@@ -104,6 +113,7 @@ class NotificationsSyncService:
         highest_synced_id = current_state.highest_synced_id
         terminal_page_last_id = current_state.terminal_page_last_id
         last_page_synced = current_state.last_page_synced
+        holdout_remainder = current_state.holdout_remainder
         collected: list[dict[str, object]] = []
 
         while True:
@@ -133,8 +143,28 @@ class NotificationsSyncService:
             page += 1
 
         deduplicated = self._deduplicate_by_id(collected)
-        csv_path = self.settings.raw_data_dir / spec.csv_filename
-        records_written = append_notifications(csv_path, deduplicated)
+        raw_csv_path = self.settings.raw_data_dir / spec.csv_filename
+        test_csv_path = (
+            self.settings.test_data_dir / spec.csv_filename
+            if spec.isft is not None
+            else None
+        )
+        persisted_ids = self._load_persisted_ids(spec)
+        new_records = [
+            record for record in deduplicated if int(record["id"]) not in persisted_ids
+        ]
+        raw_records, test_records, holdout_remainder = self._split_records_for_storage(
+            spec,
+            new_records,
+            holdout_remainder=holdout_remainder,
+        )
+        raw_records_written = append_notifications(raw_csv_path, raw_records)
+        test_records_written = (
+            append_notifications(test_csv_path, test_records)
+            if test_csv_path is not None
+            else 0
+        )
+        records_written = raw_records_written + test_records_written
         if deduplicated:
             highest_synced_id = max(
                 highest_synced_id,
@@ -145,17 +175,23 @@ class NotificationsSyncService:
             highest_synced_id=highest_synced_id,
             terminal_page_last_id=terminal_page_last_id,
             last_page_synced=last_page_synced,
+            holdout_remainder=holdout_remainder,
             updated_at=utc_now_iso(),
         )
 
         return (
             SyncResult(
                 dataset=spec.key,
-                csv_path=str(csv_path),
+                csv_path=str(raw_csv_path),
                 records_written=records_written,
                 highest_synced_id=highest_synced_id,
                 terminal_page_last_id=terminal_page_last_id,
                 last_page_synced=last_page_synced,
+                raw_records_written=raw_records_written,
+                test_csv_path=(
+                    None if test_csv_path is None else str(test_csv_path)
+                ),
+                test_records_written=test_records_written,
             ),
             next_state,
         )
@@ -179,6 +215,67 @@ class NotificationsSyncService:
         for record in records:
             deduplicated[int(record["id"])] = record
         return sorted(deduplicated.values(), key=lambda item: int(item["id"]))
+
+    def _load_persisted_ids(self, spec: DatasetSpec) -> set[int]:
+        persisted_ids = load_csv_row_ids(self.settings.raw_data_dir / spec.csv_filename)
+        if spec.isft is not None:
+            persisted_ids.update(
+                load_csv_row_ids(self.settings.test_data_dir / spec.csv_filename)
+            )
+        return persisted_ids
+
+    @staticmethod
+    def _holdout_target_count(
+        record_count: int, holdout_remainder: float
+    ) -> tuple[int, float]:
+        desired_holdout = (record_count * HOLDOUT_RATIO) + holdout_remainder
+        holdout_count = floor(desired_holdout)
+        return holdout_count, desired_holdout - holdout_count
+
+    @staticmethod
+    def _select_holdout_ids(
+        spec: DatasetSpec, records: Iterable[dict[str, object]], holdout_count: int
+    ) -> set[int]:
+        ranked_records = sorted(
+            records,
+            key=lambda item: (
+                sha256(f"{spec.key}:{int(item['id'])}".encode("utf-8")).hexdigest(),
+                int(item["id"]),
+            ),
+        )
+        return {int(record["id"]) for record in ranked_records[:holdout_count]}
+
+    def _split_records_for_storage(
+        self,
+        spec: DatasetSpec,
+        records: list[dict[str, object]],
+        *,
+        holdout_remainder: float,
+    ) -> tuple[list[dict[str, object]], list[dict[str, object]], float]:
+        if spec.isft is None:
+            return records, [], 0.0
+
+        if not records:
+            return [], [], holdout_remainder
+
+        holdout_count, next_remainder = self._holdout_target_count(
+            len(records),
+            holdout_remainder,
+        )
+        if holdout_count <= 0:
+            return records, [], next_remainder
+
+        holdout_ids = self._select_holdout_ids(spec, records, holdout_count)
+        raw_records: list[dict[str, object]] = []
+        test_records: list[dict[str, object]] = []
+
+        for record in records:
+            if int(record["id"]) in holdout_ids:
+                test_records.append(record)
+            else:
+                raw_records.append(record)
+
+        return raw_records, test_records, next_remainder
 
     @staticmethod
     def _page_is_descending(batch_ids: list[int]) -> bool:

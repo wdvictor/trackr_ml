@@ -14,6 +14,7 @@ class SyncState:
     highest_synced_id: int = 0
     terminal_page_last_id: int = 0
     last_page_synced: int = 0
+    holdout_remainder: float = 0.0
     updated_at: str | None = None
 
     @classmethod
@@ -25,6 +26,7 @@ class SyncState:
             highest_synced_id=int(raw.get("highest_synced_id", 0) or 0),
             terminal_page_last_id=int(raw.get("terminal_page_last_id", 0) or 0),
             last_page_synced=int(raw.get("last_page_synced", 0) or 0),
+            holdout_remainder=float(raw.get("holdout_remainder", 0.0) or 0.0),
             updated_at=(
                 None if raw.get("updated_at") in (None, "") else str(raw["updated_at"])
             ),
@@ -49,6 +51,9 @@ class SyncResult:
     highest_synced_id: int
     terminal_page_last_id: int
     last_page_synced: int
+    raw_records_written: int = 0
+    test_csv_path: str | None = None
+    test_records_written: int = 0
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)

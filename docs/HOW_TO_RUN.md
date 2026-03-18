@@ -100,7 +100,8 @@ The `sync` command already handles:
 - using `NOTIFICATIONS_API_URL` from `.env`
 - automatic pagination with `p`
 - fetching up to `size=2000` per request
-- avoiding duplicate `id` values
+- routing roughly 20% of new labeled rows into `data/test/`
+- avoiding duplicate `id` values across `data/raw/` and `data/test/`
 - continuing incrementally across executions
 
 When to use it:
@@ -136,16 +137,16 @@ Training uses:
 Recommended flow for a new training run:
 
 1. Refresh the data with `sync`
-2. Prepare the isolated test dataset
+2. Confirm that the isolated test dataset has both labels
 3. Choose a new version
 4. Run `train --version <new-version>`
 5. Run `evaluate --version <new-version>`
 
-## 6. How to Prepare an Isolated Test Dataset
+## 6. How the Isolated Test Dataset Is Built
 
 Model accuracy must be measured on a holdout dataset that is never reused for training.
 
-Create these files:
+By default, `sync` appends roughly 20% of new labeled rows into:
 
 - `data/test/is_transactions_notifications.csv`
 - `data/test/is_not_financial_transaction.csv`
@@ -162,8 +163,9 @@ Requirements for this dataset:
 - it must contain examples that are not used for training
 - it must contain both labels
 - it should be representative of real production traffic
-- it should remain stable across model comparisons
 - if it was carved out from the same original source, keep the same `id` values
+
+If you need a fully stable benchmark across many comparisons, freeze these files between evaluations instead of continuing to append new sync data.
 
 Important note:
 
