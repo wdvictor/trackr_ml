@@ -1,0 +1,2 @@
+requests<3,>=2.31
+scikit-learn<2,>=1.5

@@ -1,0 +1,2 @@
+[console_scripts]
+trackr-ml = trackr_ml.cli:main

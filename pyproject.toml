@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trackr-ml"
+version = "0.1.0"
+description = "Pipeline to sync notifications, train a classifier, and extract transaction data."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "requests>=2.31,<3",
+  "scikit-learn>=1.5,<2",
+]
+
+[project.scripts]
+trackr-ml = "trackr_ml.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
