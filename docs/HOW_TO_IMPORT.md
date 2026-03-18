@@ -1,45 +1,45 @@
-# Como importar `trackr_ml` em outro projeto
+# How to import `trackr_ml` into another project
 
-## Forma escolhida
+## Chosen approach
 
-Este projeto nao sera publicado em PyPI ou registro privado. A forma adotada para reutiliza-lo em outro projeto Python e instalar o repositorio localmente em modo editavel.
+This project will not be published to PyPI or to a private package registry. The chosen way to reuse it in another Python project is to install the repository locally in editable mode.
 
-Motivos:
+Reasons:
 
-- o pacote ja tem `pyproject.toml` e layout `src/`
-- o import fica estavel com `from trackr_ml import run_predict`
-- o codigo consumidor usa diretamente os artefatos e o `models/registry.json` mantidos neste repositorio
-- alteracoes futuras neste repositorio passam a refletir no ambiente consumidor sem precisar publicar novas builds
+- the package already has a `pyproject.toml` file and a `src/` layout
+- the import path stays stable with `from trackr_ml import run_predict`
+- the consumer code uses the artifacts and `models/registry.json` stored in this repository directly
+- future changes in this repository become available to the consumer environment without publishing new builds
 
-## Como instalar no projeto consumidor
+## How to install it in the consumer project
 
-No ambiente virtual do outro projeto:
+Inside the virtual environment of the other project:
 
 ```bash
 python -m pip install -e /absolute/path/to/trackr_ml
 ```
 
-Exemplo:
+Example:
 
 ```bash
-python -m pip install -e /home/victor/Github/trackr_ml
+python -m pip install -e /absolute/path/to/trackr_ml
 ```
 
-Se preferir `uv`, o efeito pratico e o mesmo:
+If you prefer `uv`, the practical result is the same:
 
 ```bash
 uv pip install -e /absolute/path/to/trackr_ml
 ```
 
-## API publica suportada
+## Supported public API
 
-A unica funcao exposta como API publica para reutilizacao e:
+The only function exposed as a public API for reuse is:
 
 ```python
 from trackr_ml import run_predict
 ```
 
-Assinatura:
+Signature:
 
 ```python
 run_predict(
@@ -50,14 +50,14 @@ run_predict(
 ) -> dict[str, object]
 ```
 
-## Regras de selecao do modelo
+## Model selection rules
 
-- se `model_path` e `model_version` forem omitidos, usa o modelo mais recente registrado em `models/registry.json`
-- se `model_version` for informado, usa a versao registrada correspondente
-- se `model_path` for informado, usa exatamente esse arquivo `.pkl`
-- se os dois forem informados ao mesmo tempo, a funcao gera erro
+- if `model_path` and `model_version` are both omitted, it uses the latest model registered in `models/registry.json`
+- if `model_version` is provided, it uses the matching registered version
+- if `model_path` is provided, it uses that exact `.pkl` file
+- if both are provided at the same time, the function raises an error
 
-## Exemplo minimo
+## Minimal example
 
 ```python
 from trackr_ml import run_predict
@@ -70,7 +70,7 @@ result = run_predict(
 print(result)
 ```
 
-Exemplo de retorno:
+Example return value:
 
 ```python
 {
@@ -87,7 +87,7 @@ Exemplo de retorno:
 }
 ```
 
-## Exemplo usando uma versao especifica
+## Example using a specific version
 
 ```python
 from trackr_ml import run_predict
@@ -99,7 +99,7 @@ result = run_predict(
 )
 ```
 
-## Exemplo usando caminho explicito
+## Example using an explicit path
 
 ```python
 from trackr_ml import run_predict
@@ -110,8 +110,8 @@ result = run_predict(
 )
 ```
 
-## Observacoes operacionais
+## Operational notes
 
-- `run_predict` nao precisa de credenciais da API remota
-- o projeto consumidor precisa ter acesso ao repositorio `trackr_ml` e aos artefatos em `models/`
-- quando nenhum modelo e informado, o comportamento depende de existir um modelo registrado como mais recente em `models/registry.json`
+- `run_predict` does not require remote API credentials
+- the consumer project must have access to the `trackr_ml` repository and the artifacts in `models/`
+- when no model is provided, the behavior depends on having a latest registered model in `models/registry.json`
