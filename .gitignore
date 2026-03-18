@@ -7,4 +7,5 @@ __pycache__/
 .coverage
 
 data/raw/*.csv
+data/test/*.csv
 data/cache/*.json

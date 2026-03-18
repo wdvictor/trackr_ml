@@ -29,6 +29,7 @@ class Settings:
     api_url: str
     api_key: str
     raw_data_dir: Path
+    test_data_dir: Path
     cache_dir: Path
     models_dir: Path
     page_size: int
@@ -58,6 +59,7 @@ class Settings:
             api_url=api_url,
             api_key=api_key,
             raw_data_dir=ROOT_DIR / "data" / "raw",
+            test_data_dir=ROOT_DIR / "data" / "test",
             cache_dir=ROOT_DIR / "data" / "cache",
             models_dir=ROOT_DIR / "models",
             page_size=DEFAULT_PAGE_SIZE,
@@ -67,5 +69,10 @@ class Settings:
         )
 
     def ensure_directories(self) -> None:
-        for directory in (self.raw_data_dir, self.cache_dir, self.models_dir):
+        for directory in (
+            self.raw_data_dir,
+            self.test_data_dir,
+            self.cache_dir,
+            self.models_dir,
+        ):
             directory.mkdir(parents=True, exist_ok=True)

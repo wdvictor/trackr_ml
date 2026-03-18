@@ -136,11 +136,41 @@ Training uses:
 Recommended flow for a new training run:
 
 1. Refresh the data with `sync`
-2. Choose a new version
-3. Run `train --version <new-version>`
-4. Run `evaluate --version <new-version>`
+2. Prepare the isolated test dataset
+3. Choose a new version
+4. Run `train --version <new-version>`
+5. Run `evaluate --version <new-version>`
 
-## 6. How to Test a New Model
+## 6. How to Prepare an Isolated Test Dataset
+
+Model accuracy must be measured on a holdout dataset that is never reused for training.
+
+Create these files:
+
+- `data/test/is_transactions_notifications.csv`
+- `data/test/is_not_financial_transaction.csv`
+
+Use the same CSV schema as the synced labeled files:
+
+- `id`
+- `app_name`
+- `text`
+- `is_financial_transaction`
+
+Requirements for this dataset:
+
+- it must contain examples that are not used for training
+- it must contain both labels
+- it should be representative of real production traffic
+- it should remain stable across model comparisons
+- if it was carved out from the same original source, keep the same `id` values
+
+Important note:
+
+- training reads `data/raw/`, but it now excludes any row whose `id` appears in `data/test/`
+- this prevents data leakage when the holdout dataset was separated from the same synced pool
+
+## 7. How to Test a New Model
 
 After training, test the saved model with:
 
@@ -151,7 +181,7 @@ PYTHONPATH=src python -m trackr_ml.cli evaluate --version 1.0.0
 This command:
 
 - loads the versioned model saved in `models/`
-- uses the local labeled CSVs as the evaluation dataset
+- uses the isolated CSVs in `data/test/` as the evaluation dataset
 - computes binary metrics
 - computes metrics for the `unknown` strategy
 - saves a report in `models/trackr-1.0.0.evaluation.json`
@@ -165,10 +195,10 @@ PYTHONPATH=src python -m trackr_ml.cli evaluate --model-path /path/to/model.pkl
 
 Important note:
 
-- this test uses the current local dataset
-- if the current dataset contains examples that were already used to train that historical model, the result should be treated as an operational or regression test, not as a fully isolated benchmark
+- this test uses only the holdout dataset in `data/test/`
+- those examples must not be reused for training or model tuning
 
-## 7. How to List Versioned Models
+## 8. How to List Versioned Models
 
 To see all registered models:
 
@@ -187,7 +217,7 @@ This command shows:
 
 For security, paths stored in `models/registry.json` use repository-relative paths instead of absolute OS paths.
 
-## 8. How to Run the Full Pipeline
+## 9. How to Run the Full Pipeline
 
 If you want to sync the data and then train:
 
@@ -201,7 +231,7 @@ If the CSV files are already up to date and you want to skip the API:
 PYTHONPATH=src python -m trackr_ml.cli pipeline --skip-sync --version 1.0.0
 ```
 
-## 9. How to Run a Manual Prediction
+## 10. How to Run a Manual Prediction
 
 To classify a notification with a versioned model:
 
@@ -214,7 +244,7 @@ PYTHONPATH=src python -m trackr_ml.cli predict \
 
 If `--model-version` is omitted, the project tries to use the most recent versioned model registered in `models/registry.json`.
 
-## 10. Important File Structure
+## 11. Important File Structure
 
 Configuration files:
 
@@ -225,6 +255,7 @@ Configuration files:
 Data:
 
 - `data/raw/`
+- `data/test/`
 - `data/cache/`
 
 Models:
@@ -240,7 +271,7 @@ Main code:
 - `src/trackr_ml/evaluation.py`
 - `src/trackr_ml/predictor.py`
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 Credential or endpoint error:
 
@@ -249,6 +280,12 @@ Credential or endpoint error:
 Error saying there is no labeled data:
 
 - run `PYTHONPATH=src python -m trackr_ml.cli sync`
+
+Error saying there is no isolated test dataset:
+
+- create `data/test/is_transactions_notifications.csv`
+- create `data/test/is_not_financial_transaction.csv`
+- make sure both files contain at least one labeled example and that the examples were not used for training
 
 Error saying the model does not exist:
 
@@ -259,7 +296,7 @@ Duplicate version error:
 
 - use a new version in `train`, for example `1.0.1`
 
-## 12. Automated Project Tests
+## 13. Automated Project Tests
 
 To run the unit tests:
 
@@ -267,11 +304,12 @@ To run the unit tests:
 PYTHONPATH=src python -m unittest discover -s tests
 ```
 
-## 13. Recommended Flow Summary
+## 14. Recommended Flow Summary
 
 1. Configure `.env`
 2. Install dependencies
 3. Run `sync`
-4. Run `train --version <version>`
-5. Run `evaluate --version <version>`
-6. If approved, use `predict --model-version <version>`
+4. Prepare `data/test/` with isolated labeled examples
+5. Run `train --version <version>`
+6. Run `evaluate --version <version>`
+7. If approved, use `predict --model-version <version>`

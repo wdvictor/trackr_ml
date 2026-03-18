@@ -5,6 +5,8 @@ from collections import Counter
 from pathlib import Path
 
 from .config import Settings
+from .datasets import load_labeled_examples
+from .metrics import compute_abstention_metrics, compute_binary_metrics
 from .model_registry import (
     build_model_paths,
     normalize_model_version,
@@ -14,7 +16,6 @@ from .model_registry import (
 )
 from .predictor import NotificationClassifier
 from .storage import utc_now_iso
-from .training import compute_abstention_metrics, compute_binary_metrics, load_labeled_examples
 
 
 def evaluate_model(
@@ -28,7 +29,17 @@ def evaluate_model(
         model_path=model_path,
         model_version=version,
     )
-    X, y = load_labeled_examples(settings)
+    X, y = load_labeled_examples(
+        settings.test_data_dir,
+        missing_data_message=(
+            "Nenhum dataset isolado de teste foi encontrado em data/test. "
+            "Crie data/test/is_transactions_notifications.csv e "
+            "data/test/is_not_financial_transaction.csv antes do evaluate."
+        ),
+        insufficient_classes_message=(
+            "A avaliacao precisa de exemplos isolados das classes true e false."
+        ),
+    )
 
     probabilities = [float(item[1]) for item in classifier.model.predict_proba(X)]
     binary_predictions = [1 if probability >= 0.5 else 0 for probability in probabilities]

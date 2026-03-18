@@ -88,6 +88,24 @@ Generated artifacts:
 - training timestamp
 - latest evaluation report, when available
 
+## Holdout Test Dataset
+
+Model accuracy must be measured on an isolated test dataset that is never reused for training.
+
+Expected files:
+
+- `data/test/is_transactions_notifications.csv`
+- `data/test/is_not_financial_transaction.csv`
+
+These files must follow the same CSV schema used by the synced labeled data:
+
+- `id`
+- `app_name`
+- `text`
+- `is_financial_transaction`
+
+Training still reads the labeled data from `data/raw/`, but it now excludes any row whose `id` is present in `data/test/`. This prevents leakage when the holdout set was carved out from the same source dataset.
+
 ## Configuration
 
 Copy `.env.example` to `.env` and fill it in:
@@ -216,7 +234,7 @@ PYTHONPATH=src python -m trackr_ml.cli evaluate --version 1.0.0
 The command:
 
 - loads `models/trackr-1.0.0.pkl`
-- evaluates the model using the local labeled CSV files
+- evaluates the model using the isolated labeled CSV files in `data/test/`
 - computes binary metrics and `unknown`-class metrics
 - saves the report to `models/trackr-1.0.0.evaluation.json`
 - updates `models/registry.json` with the latest evaluation
@@ -227,7 +245,7 @@ It is also possible to test an artifact outside the registry:
 PYTHONPATH=src python -m trackr_ml.cli evaluate --model-path /path/to/model.pkl
 ```
 
-Important note: this command tests the saved model against the local labeled dataset available at execution time. If that dataset contains examples used in the historical training of that model, the result should be treated as an operational or regression test, not as a fully isolated benchmark.
+Important note: the holdout dataset in `data/test/` should stay stable across model comparisons, contain both labels, represent production traffic, and never be reused for training or model tuning.
 
 ## Prediction Output
 

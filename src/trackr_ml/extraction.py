@@ -18,15 +18,15 @@ CARD_LAST4_PATTERNS = (
 )
 
 CARD_LABEL_PATTERNS = (
-    re.compile(r"(?:cartao|card)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
-    re.compile(r"(?:credito|debito)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
+    re.compile(r"(?:cartão|card)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
+    re.compile(r"(?:crédito|débito)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
 )
 
 PIX_KEYWORDS = (
     " pix ",
     "chave pix",
-    "transferencia pix",
-    "transferencia via pix",
+    "transferência pix",
+    "transferência via pix",
     "pix enviado",
     "pix recebido",
 )
@@ -36,11 +36,10 @@ INCOME_KEYWORDS = {
     "recebido": 3,
     "recebemos": 2,
     "creditado": 3,
-    "deposito": 2,
-    "deposito recebido": 4,
+    "depósito": 2,
+    "depósito recebido": 4,
     "estorno": 2,
     "reembolso": 2,
-    "salario": 2,
     "entrada": 1,
 }
 
@@ -48,17 +47,17 @@ EXPENSE_KEYWORDS = {
     "pagamento": 3,
     "pagou": 3,
     "compra": 3,
-    "debito": 2,
+    "débito": 2,
     "saque": 2,
-    "transferencia enviada": 4,
+    "transferência enviada": 4,
     "pix enviado": 4,
     "transacao aprovada": 3,
     "gasto": 2,
     "fatura": 2,
 }
 
-CREDIT_KEYWORDS = ("credito", "cartao de credito", "fatura", "parcelado")
-DEBIT_KEYWORDS = ("debito", "cartao de debito", "funcao debito")
+CREDIT_KEYWORDS = ("crédito", "cartão de crédito", "fatura", "parcelado")
+DEBIT_KEYWORDS = ("débito", "cartao de débito", "funcao débito")
 
 
 def extract_transaction_details(
