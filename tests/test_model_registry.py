@@ -10,6 +10,7 @@ from trackr_ml.model_registry import (
     list_registered_models,
     normalize_model_version,
     register_model,
+    resolve_repo_path,
     resolve_registered_model,
 )
 
@@ -65,6 +66,9 @@ class ModelRegistryTests(unittest.TestCase):
             self.assertEqual(latest["version"], "1.1.0")
             self.assertEqual(explicit["name"], "trackr-1.0.0")
             self.assertEqual([item["version"] for item in listed], ["1.1.0", "1.0.0"])
+            self.assertFalse(Path(latest["model_path"]).is_absolute())
+            self.assertFalse(Path(explicit["metadata_path"]).is_absolute())
+            self.assertTrue(resolve_repo_path(latest["model_path"]).is_absolute())
 
 
 if __name__ == "__main__":

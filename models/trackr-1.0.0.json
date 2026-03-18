@@ -1,0 +1,41 @@
+{
+  "dataset": {
+    "negative_rows": 189,
+    "positive_rows": 6,
+    "rows": 195
+  },
+  "features": {
+    "app_name": "one_hot_encoding",
+    "text": "tfidf_word_1_2grams + tfidf_char_3_5grams"
+  },
+  "labels": {
+    "negative": "not_financial_transaction",
+    "positive": "financial_transaction",
+    "uncertain": "unknown"
+  },
+  "model": {
+    "artifact_path": "models/trackr-1.0.0.pkl",
+    "metadata_path": "models/trackr-1.0.0.json",
+    "name": "trackr-1.0.0",
+    "version": "1.0.0"
+  },
+  "thresholds": {
+    "unknown_lower_bound": 0.35,
+    "unknown_upper_bound": 0.65
+  },
+  "trained_at": "2026-03-18T18:13:56.807404+00:00",
+  "validation": {
+    "abstention": {
+      "coverage": 0.9744,
+      "selective_accuracy": 1.0,
+      "unknown_rate": 0.0256
+    },
+    "binary": {
+      "accuracy": 1.0,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "validation_rows": 39
+  }
+}

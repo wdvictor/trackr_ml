@@ -9,7 +9,7 @@ Requires-Dist: scikit-learn<2,>=1.5
 
 # trackr-ml
 
-Step-by-step operational guide: [HOW_TO_RUN.md](/home/victor/Github/trackr_ml/docs/HOW_TO_RUN.md)
+Step-by-step operational guide: [HOW_TO_RUN.md](../../docs/HOW_TO_RUN.md)
 
 Python pipeline to:
 

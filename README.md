@@ -1,6 +1,6 @@
 # trackr-ml
 
-Step-by-step operational guide: [HOW_TO_RUN.md](/home/victor/Github/trackr_ml/docs/HOW_TO_RUN.md)
+Step-by-step operational guide: [HOW_TO_RUN.md](./docs/HOW_TO_RUN.md)
 
 Python pipeline to:
 
@@ -83,7 +83,7 @@ Generated artifacts:
 
 - registered versions
 - the latest version
-- artifact paths
+- repository-relative artifact paths
 - training timestamp
 - latest evaluation report, when available
 

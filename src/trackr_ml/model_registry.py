@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
+
+from .config import ROOT_DIR
 
 MODEL_NAME_PREFIX = "trackr-"
 MODEL_REGISTRY_FILENAME = "registry.json"
@@ -10,6 +13,8 @@ MODEL_FILE_SUFFIX = ".pkl"
 METADATA_FILE_SUFFIX = ".json"
 EVALUATION_FILE_SUFFIX = ".evaluation.json"
 VERSION_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+MODEL_PATH_KEYS = ("model_path", "metadata_path", "evaluation_path")
+MODEL_METADATA_PATH_KEYS = ("artifact_path", "metadata_path", "evaluation_path")
 
 
 def normalize_model_version(version: str) -> str:
@@ -27,6 +32,43 @@ def normalize_model_version(version: str) -> str:
 
 def build_model_name(version: str) -> str:
     return f"{MODEL_NAME_PREFIX}{normalize_model_version(version)}"
+
+
+def to_relative_path_str(path: Path | str) -> str:
+    resolved_path = Path(path)
+    if not resolved_path.is_absolute():
+        return resolved_path.as_posix()
+
+    try:
+        return resolved_path.resolve().relative_to(ROOT_DIR).as_posix()
+    except ValueError:
+        return Path(os.path.relpath(resolved_path.resolve(), ROOT_DIR)).as_posix()
+
+
+def resolve_repo_path(path: Path | str) -> Path:
+    candidate = Path(path)
+    if candidate.is_absolute():
+        return candidate
+    return (ROOT_DIR / candidate).resolve()
+
+
+def sanitize_registry_model_entry(entry: dict[str, object]) -> dict[str, object]:
+    sanitized = dict(entry)
+    for key in MODEL_PATH_KEYS:
+        if sanitized.get(key):
+            sanitized[key] = to_relative_path_str(str(sanitized[key]))
+    return sanitized
+
+
+def sanitize_model_descriptor(model_data: dict[str, object] | None) -> dict[str, object] | None:
+    if model_data is None:
+        return None
+
+    sanitized = dict(model_data)
+    for key in MODEL_METADATA_PATH_KEYS:
+        if sanitized.get(key):
+            sanitized[key] = to_relative_path_str(str(sanitized[key]))
+    return sanitized
 
 
 def build_model_paths(models_dir: Path, version: str) -> dict[str, Path | str]:
@@ -49,14 +91,28 @@ def load_registry(registry_path: Path) -> dict[str, object]:
     payload = json.loads(registry_path.read_text(encoding="utf-8"))
     if "models" not in payload or not isinstance(payload["models"], dict):
         payload["models"] = {}
+    else:
+        payload["models"] = {
+            version: sanitize_registry_model_entry(model_data)
+            for version, model_data in payload["models"].items()
+            if isinstance(model_data, dict)
+        }
     payload.setdefault("latest_version", None)
     return payload
 
 
 def save_registry(registry_path: Path, registry: dict[str, object]) -> None:
     registry_path.parent.mkdir(parents=True, exist_ok=True)
+    sanitized_registry = {
+        "latest_version": registry.get("latest_version"),
+        "models": {
+            version: sanitize_registry_model_entry(model_data)
+            for version, model_data in registry.get("models", {}).items()
+            if isinstance(model_data, dict)
+        },
+    }
     registry_path.write_text(
-        json.dumps(registry, indent=2, ensure_ascii=False, sort_keys=True),
+        json.dumps(sanitized_registry, indent=2, ensure_ascii=False, sort_keys=True),
         encoding="utf-8",
     )
 
@@ -84,8 +140,8 @@ def register_model(
     models[normalized_version] = {
         "version": normalized_version,
         "name": model_name,
-        "model_path": str(model_path),
-        "metadata_path": str(metadata_path),
+        "model_path": to_relative_path_str(model_path),
+        "metadata_path": to_relative_path_str(metadata_path),
         "trained_at": trained_at,
         "dataset_rows": dataset_rows,
     }
@@ -107,7 +163,7 @@ def update_evaluation_report(
     if normalized_version not in models:
         return
 
-    models[normalized_version]["evaluation_path"] = str(evaluation_path)
+    models[normalized_version]["evaluation_path"] = to_relative_path_str(evaluation_path)
     models[normalized_version]["last_evaluated_at"] = evaluated_at
     save_registry(registry_path, registry)
 

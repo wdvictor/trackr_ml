@@ -185,6 +185,8 @@ This command shows:
 - training timestamp
 - latest evaluation report, when available
 
+For security, paths stored in `models/registry.json` use repository-relative paths instead of absolute OS paths.
+
 ## 8. How to Run the Full Pipeline
 
 If you want to sync the data and then train:

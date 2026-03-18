@@ -1,0 +1,30 @@
+{
+  "abstention": {
+    "coverage": 0.9897,
+    "selective_accuracy": 1.0,
+    "unknown_rate": 0.0103
+  },
+  "binary": {
+    "accuracy": 0.9949,
+    "f1": 0.9231,
+    "precision": 0.8571,
+    "recall": 1.0
+  },
+  "dataset": {
+    "negative_rows": 189,
+    "positive_rows": 6,
+    "rows": 195
+  },
+  "evaluated_at": "2026-03-18T18:14:33.192553+00:00",
+  "model": {
+    "artifact_path": "models/trackr-1.0.0.pkl",
+    "metadata_path": "models/trackr-1.0.0.json",
+    "name": "trackr-1.0.0",
+    "version": "1.0.0"
+  },
+  "ternary_predictions": {
+    "financial_transaction": 6,
+    "not_financial_transaction": 187,
+    "unknown": 2
+  }
+}

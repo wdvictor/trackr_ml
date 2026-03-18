@@ -6,7 +6,7 @@ from pathlib import Path
 from .config import ROOT_DIR
 from .domain import PredictionLabel, PredictionResult
 from .extraction import extract_transaction_details
-from .model_registry import resolve_registered_model
+from .model_registry import resolve_registered_model, resolve_repo_path, sanitize_model_descriptor
 
 DEFAULT_MODEL_FILENAME = "notification_classifier.pkl"
 DEFAULT_MODEL_METADATA_FILENAME = "notification_classifier_metadata.json"
@@ -37,12 +37,12 @@ class NotificationClassifier:
         if model_path is not None:
             resolved_path = model_path
         elif model_version is not None:
-            resolved_path = Path(
+            resolved_path = resolve_repo_path(
                 resolve_registered_model(ROOT_DIR / "models", model_version)["model_path"]
             )
         else:
             try:
-                resolved_path = Path(
+                resolved_path = resolve_repo_path(
                     resolve_registered_model(ROOT_DIR / "models")["model_path"]
                 )
             except RuntimeError:
@@ -56,6 +56,9 @@ class NotificationClassifier:
         with resolved_path.open("rb") as handle:
             artifact = pickle.load(handle)
 
+        artifact["metadata"]["model"] = sanitize_model_descriptor(
+            artifact["metadata"].get("model")
+        )
         return cls(model=artifact["model"], metadata=artifact["metadata"])
 
     def predict(self, text: str, app_name: str = "") -> PredictionResult:

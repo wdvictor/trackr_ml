@@ -8,6 +8,8 @@ from .config import Settings
 from .model_registry import (
     build_model_paths,
     normalize_model_version,
+    sanitize_model_descriptor,
+    to_relative_path_str,
     update_evaluation_report,
 )
 from .predictor import NotificationClassifier
@@ -49,7 +51,7 @@ def evaluate_model(
 
     report = {
         "evaluated_at": evaluated_at,
-        "model": classifier.metadata.get("model"),
+        "model": sanitize_model_descriptor(classifier.metadata.get("model")),
         "dataset": {
             "rows": len(X),
             "positive_rows": sum(1 for item in y if item == 1),
@@ -83,13 +85,13 @@ def evaluate_model(
             evaluation_path=evaluation_path,
             evaluated_at=evaluated_at,
         )
-        report["evaluation_path"] = str(evaluation_path)
+        report["evaluation_path"] = to_relative_path_str(evaluation_path)
     elif model_path is not None:
         evaluation_path = model_path.with_suffix(".evaluation.json")
         evaluation_path.write_text(
             json.dumps(report, indent=2, ensure_ascii=False, sort_keys=True),
             encoding="utf-8",
         )
-        report["evaluation_path"] = str(evaluation_path)
+        report["evaluation_path"] = to_relative_path_str(evaluation_path)
 
     return report

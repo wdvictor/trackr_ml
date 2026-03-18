@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .config import Settings
 from .features import build_classifier_pipeline
-from .model_registry import build_model_paths, register_model
+from .model_registry import build_model_paths, register_model, sanitize_model_descriptor, to_relative_path_str
 from .storage import load_csv_rows, utc_now_iso
 
 
@@ -165,14 +165,18 @@ def train_model(
     resolved_paths = build_model_paths(settings.models_dir, version)
     resolved_model_path = model_path or resolved_paths["model_path"]
     resolved_metadata_path = metadata_path or resolved_paths["metadata_path"]
+    relative_model_path = to_relative_path_str(resolved_model_path)
+    relative_metadata_path = to_relative_path_str(resolved_metadata_path)
 
     metadata = {
-        "model": {
+        "model": sanitize_model_descriptor(
+            {
             "version": resolved_paths["version"],
             "name": resolved_paths["name"],
-            "artifact_path": str(resolved_model_path),
-            "metadata_path": str(resolved_metadata_path),
-        },
+            "artifact_path": relative_model_path,
+            "metadata_path": relative_metadata_path,
+            }
+        ),
         "trained_at": utc_now_iso(),
         "features": {
             "text": "tfidf_word_1_2grams + tfidf_char_3_5grams",
@@ -218,7 +222,7 @@ def train_model(
     return {
         "model_name": str(resolved_paths["name"]),
         "model_version": str(resolved_paths["version"]),
-        "model_path": str(resolved_model_path),
-        "metadata_path": str(resolved_metadata_path),
+        "model_path": relative_model_path,
+        "metadata_path": relative_metadata_path,
         "metadata": metadata,
     }

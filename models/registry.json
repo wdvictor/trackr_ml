@@ -1,0 +1,15 @@
+{
+  "latest_version": "1.0.0",
+  "models": {
+    "1.0.0": {
+      "dataset_rows": 195,
+      "evaluation_path": "models/trackr-1.0.0.evaluation.json",
+      "last_evaluated_at": "2026-03-18T18:14:33.192553+00:00",
+      "metadata_path": "models/trackr-1.0.0.json",
+      "model_path": "models/trackr-1.0.0.pkl",
+      "name": "trackr-1.0.0",
+      "trained_at": "2026-03-18T18:13:56.807404+00:00",
+      "version": "1.0.0"
+    }
+  }
+}
