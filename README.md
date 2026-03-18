@@ -1,6 +1,7 @@
 # trackr-ml
 
 Step-by-step operational guide: [HOW_TO_RUN.md](./docs/HOW_TO_RUN.md)
+Import guide for another Python project: [HOW_TO_IMPORT.md](./docs/HOW_TO_IMPORT.md)
 
 Python pipeline to:
 
@@ -113,6 +114,20 @@ uv pip install -e .
 
 Without installing the package, it also works with `PYTHONPATH=src`.
 
+To consume this code from another Python project without publishing it, the recommended approach is a local editable install that points to this repository. That keeps the package importable as `trackr_ml` and preserves access to the local `models/` registry and artifacts stored here.
+
+Example from the consumer project environment:
+
+```bash
+python -m pip install -e /absolute/path/to/trackr_ml
+```
+
+After that, the other project can import the public API with:
+
+```python
+from trackr_ml import run_predict
+```
+
 ## Usage
 
 Sync CSV files:
@@ -143,6 +158,46 @@ PYTHONPATH=src python -m trackr_ml.cli predict \
 ```
 
 If `--model-version` is omitted, prediction uses the most recent versioned model registered in `models/registry.json`.
+
+## Library Usage
+
+The supported public API for other Python projects is `run_predict`.
+
+Example:
+
+```python
+from trackr_ml import run_predict
+
+result = run_predict(
+    text="Compra aprovada no credito final 1234 no valor de R$ 55,90",
+    app_name="com.nu.production",
+)
+```
+
+By default, `run_predict` uses the latest model registered in `models/registry.json`.
+
+If needed, it can target a specific artifact:
+
+```python
+from trackr_ml import run_predict
+
+result = run_predict(
+    text="Pix recebido de R$ 150,00",
+    app_name="com.picpay",
+    model_version="1.0.0",
+)
+```
+
+Or an explicit file path:
+
+```python
+from trackr_ml import run_predict
+
+result = run_predict(
+    text="Pix recebido de R$ 150,00",
+    model_path="/absolute/path/to/model.pkl",
+)
+```
 
 List versioned models:
 

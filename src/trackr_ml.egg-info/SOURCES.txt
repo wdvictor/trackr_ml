@@ -1,6 +1,7 @@
 README.md
 pyproject.toml
 src/trackr_ml/__init__.py
+src/trackr_ml/api.py
 src/trackr_ml/cli.py
 src/trackr_ml/config.py
 src/trackr_ml/domain.py
@@ -19,6 +20,7 @@ src/trackr_ml.egg-info/dependency_links.txt
 src/trackr_ml.egg-info/entry_points.txt
 src/trackr_ml.egg-info/requires.txt
 src/trackr_ml.egg-info/top_level.txt
+tests/test_api.py
 tests/test_extraction.py
 tests/test_model_registry.py
 tests/test_sync.py

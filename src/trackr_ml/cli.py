@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from .api import run_predict
 from .config import Settings
 
 
@@ -119,25 +120,6 @@ def run_pipeline(skip_sync: bool, version: str) -> dict[str, object]:
 
     payload["train"] = run_train(version=version)
     return payload
-
-
-def run_predict(
-    text: str,
-    app_name: str,
-    model_path: Path | None,
-    model_version: str | None,
-) -> dict[str, object]:
-    from .predictor import NotificationClassifier
-
-    if model_path is not None and model_version is not None:
-        raise RuntimeError("Use apenas --model-path ou --model-version, nunca os dois.")
-
-    Settings.from_env(require_api=False)
-    classifier = NotificationClassifier.load(
-        model_path=model_path,
-        model_version=model_version,
-    )
-    return classifier.predict(text=text, app_name=app_name).to_dict()
 
 
 def run_evaluate(

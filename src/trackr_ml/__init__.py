@@ -1,5 +1,7 @@
-"""trackr_ml package."""
+"""Public package interface for trackr_ml."""
 
-__all__ = ["__version__"]
+from .api import run_predict
+
+__all__ = ["run_predict"]
 
 __version__ = "0.1.0"
