@@ -14,6 +14,7 @@ class ExtractionTests(unittest.TestCase):
 
         self.assertEqual(result.value, 1250.89)
         self.assertEqual(result.direction, "income")
+        self.assertTrue(result.is_completed)
         self.assertTrue(result.is_pix)
         self.assertIsNone(result.card_type)
         self.assertIsNone(result.card_last4)
@@ -27,10 +28,40 @@ class ExtractionTests(unittest.TestCase):
 
         self.assertEqual(result.value, 55.90)
         self.assertEqual(result.direction, "expense")
+        self.assertTrue(result.is_completed)
         self.assertEqual(result.card_type, "credit")
         self.assertEqual(result.card_last4, "1234")
         self.assertEqual(result.card_label, "platinum")
         self.assertFalse(result.is_pix)
+
+    def test_extracts_declined_transaction_status(self) -> None:
+        result = extract_transaction_details(
+            text=(
+                "compra recusada: limite insuficiente a compra no cartao final "
+                "5371********7761 em 19/03/2026, de r$ 26.90, em google "
+                "youtubepremium sao paulo bra, foi recusada por limite de "
+                "credito insuficiente. toque para conferir seu limite"
+            ),
+            app_name="com.c6bank.app",
+        )
+
+        self.assertEqual(result.value, 26.90)
+        self.assertEqual(result.direction, "expense")
+        self.assertFalse(result.is_completed)
+        self.assertEqual(result.card_type, "credit")
+        self.assertEqual(result.card_last4, "7761")
+        self.assertFalse(result.is_pix)
+
+    def test_returns_unknow_when_completion_status_is_not_clear(self) -> None:
+        result = extract_transaction_details(
+            text="Compra em processamento no cartao final 1234 no valor de R$ 55,90.",
+            app_name="com.itau",
+        )
+
+        self.assertEqual(result.value, 55.90)
+        self.assertEqual(result.direction, "expense")
+        self.assertEqual(result.is_completed, "unknow")
+        self.assertEqual(result.card_last4, "1234")
 
     def test_does_not_infer_card_without_card_signals(self) -> None:
         result = extract_transaction_details(
@@ -38,6 +69,7 @@ class ExtractionTests(unittest.TestCase):
             app_name="com.picpay",
         )
 
+        self.assertTrue(result.is_completed)
         self.assertTrue(result.is_pix)
         self.assertIsNone(result.card_type)
         self.assertIsNone(result.card_last4)

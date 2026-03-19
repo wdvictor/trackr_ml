@@ -79,6 +79,7 @@ Example return value:
     "transaction": {
         "value": 55.9,
         "direction": "expense",
+        "isCompleted": True,
         "is_pix": False,
         "card_type": "credit",
         "card_last4": "1234",

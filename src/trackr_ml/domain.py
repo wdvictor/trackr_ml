@@ -7,6 +7,7 @@ DatasetKey = Literal["financial", "not_financial", "not_classified"]
 PredictionLabel = Literal[
     "financial_transaction", "not_financial_transaction", "unknown"
 ]
+TransactionCompletionStatus = Literal[True, False, "unknow"]
 
 
 @dataclass(slots=True)
@@ -63,13 +64,16 @@ class SyncResult:
 class TransactionDetails:
     value: float | None
     direction: Literal["income", "expense"] | None
+    is_completed: TransactionCompletionStatus
     is_pix: bool
     card_type: Literal["credit", "debit"] | None
     card_last4: str | None
     card_label: str | None
 
     def to_dict(self) -> dict[str, object]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["isCompleted"] = payload.pop("is_completed")
+        return payload
 
 
 @dataclass(slots=True)
@@ -79,7 +83,10 @@ class PredictionResult:
     transaction: TransactionDetails | None
 
     def to_dict(self) -> dict[str, object]:
-        payload = asdict(self)
-        if self.transaction is None:
-            payload["transaction"] = None
-        return payload
+        return {
+            "label": self.label,
+            "confidence": self.confidence,
+            "transaction": (
+                None if self.transaction is None else self.transaction.to_dict()
+            ),
+        }

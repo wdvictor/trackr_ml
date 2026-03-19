@@ -30,6 +30,7 @@ After classification, transaction field extraction uses deterministic rules:
 
 - `value`: regex for BRL currency values
 - `direction`: heuristics for `income` or `expense`
+- `isCompleted`: heuristics for completed, failed, or `unknow`
 - `is_pix`: PIX-related keywords
 - `card_type`: heuristics for `credit` or `debit`
 - `card_last4` and `card_label`: best-effort card extraction
@@ -249,7 +250,7 @@ It is also possible to test an artifact outside the registry:
 PYTHONPATH=src python -m trackr_ml.cli evaluate --model-path /path/to/model.pkl
 ```
 
-Important note: the holdout dataset in `data/test/` should stay stable across model comparisons, contain both labels, represent production traffic, and never be reused for training or model tuning.
+Important note: if you want a fully stable benchmark across model comparisons, freeze the files in `data/test/` between evaluations. In every case, they should contain both labels, represent production traffic, and never be reused for training or tuning.
 
 ## Prediction Output
 
@@ -262,6 +263,7 @@ Example:
   "transaction": {
     "value": 55.9,
     "direction": "expense",
+    "isCompleted": true,
     "is_pix": false,
     "card_type": "credit",
     "card_last4": "1234",

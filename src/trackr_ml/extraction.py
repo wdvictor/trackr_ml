@@ -3,30 +3,34 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from .domain import TransactionDetails
+from .domain import TransactionCompletionStatus, TransactionDetails
 from .text import compact_whitespace, normalize_text
 
 AMOUNT_PATTERNS = (
-    re.compile(r"r\$\s*(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})"),
-    re.compile(r"(?<!\d)(\d{1,3}(?:\.\d{3})*,\d{2})(?!\d)"),
+    re.compile(
+        r"r\$\s*(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2}))"
+    ),
+    re.compile(
+        r"(?<!\d)(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2}))(?!\d)"
+    ),
 )
 
 CARD_LAST4_PATTERNS = (
-    re.compile(r"(?:final|terminad[oa]\s+em)\D{0,12}(\d{4})"),
     re.compile(r"\*{2,}\s*(\d{4})"),
     re.compile(r"x{2,}\s*(\d{4})"),
+    re.compile(r"(?:final|terminad[oa]\s+em)\D{0,12}(\d{4})"),
 )
 
 CARD_LABEL_PATTERNS = (
-    re.compile(r"(?:cartão|card)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
-    re.compile(r"(?:crédito|débito)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
+    re.compile(r"(?:cartao|card)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
+    re.compile(r"(?:credito|debito)\s+([a-z0-9 ]{2,40}?)(?:\s+final|\s+\*{2,}|\s+x{2,}|\s+\d{4})"),
 )
 
 PIX_KEYWORDS = (
     " pix ",
     "chave pix",
-    "transferência pix",
-    "transferência via pix",
+    "transferencia pix",
+    "transferencia via pix",
     "pix enviado",
     "pix recebido",
 )
@@ -36,8 +40,8 @@ INCOME_KEYWORDS = {
     "recebido": 3,
     "recebemos": 2,
     "creditado": 3,
-    "depósito": 2,
-    "depósito recebido": 4,
+    "deposito": 2,
+    "deposito recebido": 4,
     "estorno": 2,
     "reembolso": 2,
     "entrada": 1,
@@ -47,17 +51,54 @@ EXPENSE_KEYWORDS = {
     "pagamento": 3,
     "pagou": 3,
     "compra": 3,
-    "débito": 2,
+    "debito": 2,
     "saque": 2,
-    "transferência enviada": 4,
+    "transferencia enviada": 4,
     "pix enviado": 4,
     "transacao aprovada": 3,
     "gasto": 2,
     "fatura": 2,
 }
 
-CREDIT_KEYWORDS = ("crédito", "cartão de crédito", "fatura", "parcelado")
-DEBIT_KEYWORDS = ("débito", "cartao de débito", "funcao débito")
+COMPLETED_KEYWORDS = {
+    "aprovada": 4,
+    "aprovado": 4,
+    "concluida": 4,
+    "concluido": 4,
+    "efetuada": 3,
+    "efetuado": 3,
+    "realizada": 3,
+    "realizado": 3,
+    "confirmada": 3,
+    "confirmado": 3,
+    "sucesso": 3,
+    "recebeu": 3,
+    "recebido": 3,
+    "creditado": 3,
+}
+
+FAILED_KEYWORDS = {
+    "recusada": 5,
+    "recusado": 5,
+    "negada": 5,
+    "negado": 5,
+    "rejeitada": 5,
+    "rejeitado": 5,
+    "cancelada": 4,
+    "cancelado": 4,
+    "falhou": 4,
+    "falha": 3,
+    "nao aprovada": 5,
+    "nao aprovado": 5,
+    "nao autorizada": 5,
+    "nao autorizado": 5,
+    "nao concluida": 5,
+    "nao concluido": 5,
+    "limite insuficiente": 2,
+}
+
+CREDIT_KEYWORDS = ("credito", "cartao de credito", "fatura", "parcelado")
+DEBIT_KEYWORDS = ("debito", "cartao de debito", "funcao debito")
 
 
 def extract_transaction_details(
@@ -77,6 +118,7 @@ def extract_transaction_details(
     return TransactionDetails(
         value=value,
         direction=direction,
+        is_completed=detect_completion_status(normalized),
         is_pix=contains_any(normalized, PIX_KEYWORDS),
         card_type=card_type,
         card_last4=card_last4,
@@ -94,13 +136,28 @@ def extract_amount(text: str) -> float | None:
         if not match:
             continue
 
-        raw_amount = match.group(1).replace(".", "").replace(",", ".")
+        raw_amount = normalize_amount_token(match.group(1))
         try:
             return round(float(raw_amount), 2)
         except ValueError:
             continue
 
     return None
+
+
+def normalize_amount_token(raw_amount: str) -> str:
+    if "," in raw_amount and "." in raw_amount:
+        if raw_amount.rfind(",") > raw_amount.rfind("."):
+            return raw_amount.replace(".", "").replace(",", ".")
+        return raw_amount.replace(",", "")
+
+    if "," in raw_amount:
+        return raw_amount.replace(".", "").replace(",", ".")
+
+    parts = raw_amount.split(".")
+    if len(parts) > 2:
+        return "".join(parts[:-1]) + "." + parts[-1]
+    return raw_amount
 
 
 def detect_direction(text: str) -> Literal["income", "expense"] | None:
@@ -112,6 +169,17 @@ def detect_direction(text: str) -> Literal["income", "expense"] | None:
     if expense_score > income_score:
         return "expense"
     return None
+
+
+def detect_completion_status(text: str) -> TransactionCompletionStatus:
+    failed_score = keyword_score(text, FAILED_KEYWORDS)
+    completed_score = keyword_score(text, COMPLETED_KEYWORDS)
+
+    if failed_score > completed_score:
+        return False
+    if completed_score > failed_score:
+        return True
+    return "unknow"
 
 
 def keyword_score(text: str, keywords: dict[str, int]) -> int:

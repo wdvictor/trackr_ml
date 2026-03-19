@@ -39,6 +39,7 @@ After classification, transaction field extraction uses deterministic rules:
 
 - `value`: regex for BRL currency values
 - `direction`: heuristics for `income` or `expense`
+- `isCompleted`: heuristics for completed, failed, or `unknow`
 - `is_pix`: PIX-related keywords
 - `card_type`: heuristics for `credit` or `debit`
 - `card_last4` and `card_label`: best-effort card extraction
@@ -249,6 +250,7 @@ Example:
   "transaction": {
     "value": 55.9,
     "direction": "expense",
+    "isCompleted": true,
     "is_pix": false,
     "card_type": "credit",
     "card_last4": "1234",
